@@ -7,6 +7,7 @@ class Database {
     protected $dsn = '';
     protected $pdo = null;
     protected $profiler;
+    protected $emulate_prepares_below_version = '5.1.17';
     
     /**
      * Constructs a new System.Data.Connection instance. Creates a new connection 
@@ -61,7 +62,11 @@ class Database {
             $this->profiler->start();
             $this->pdo = new \PDO($this->dsn, $uid, $pwd);
             $this->profiler->log('Connected to database', $dbConfig->toArray(), Profiler::CONNECT);
+            // Set prepared statement emulation depending on server version
+            $serverversion = $this->pdo->getAttribute(\PDO::ATTR_SERVER_VERSION);
+            $emulate_prepares = (version_compare($serverversion, $this->emulate_prepares_below_version, '<'));
             $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $this->pdo->setAttribute(\PDO::ATTR_EMULATE_PREPARES, $emulate_prepares );
         }catch(\PDOException $e){
             throw new DatabaseException($e->getMessage());
         }
